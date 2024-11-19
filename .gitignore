@@ -1,0 +1,7 @@
+# Ignore node files from the frontend
+frontend/node_modules
+frontend/package-lock.json
+
+# Ignore .venv from the backend
+backend/.venv
+backend/__pycache__
