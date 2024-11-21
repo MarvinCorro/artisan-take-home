@@ -4,3 +4,4 @@ wheel @ file:///usr/local/Cellar/python%403.13/3.13.0_1/libexec/wheel-0.44.0-py3
 
 fastapi=='fastapi[standard]'
 uvicorn=='uvicorn[standard]'
+pydantic==2.9.2

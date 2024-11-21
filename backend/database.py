@@ -16,28 +16,27 @@ def get_db() -> Generator[sqlite3.Connection, None, None]:
 
 # Initialize all necessary tables
 def initialize_db():
-    """
-    Initializes all tables in the database if they don't exist.
-    """
     with sqlite3.connect(DB_FILE) as conn:
         cursor = conn.cursor()
 
-        # Table for storing messages
+        # Create the conversations table
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS conversations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL
+        )
+        """)
+
+        # Create the messages table
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            message TEXT NOT NULL
+            message TEXT NOT NULL,
+            user_id INTEGER NOT NULL
         )
         """)
 
-        # Table for storing conversations
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS conversations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT
-        )
-        """)
-
-        # Join table for associating messages with conversations
+        # Create the conversation_messages join table
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS conversation_messages (
             conversation_id INTEGER NOT NULL,
@@ -48,7 +47,7 @@ def initialize_db():
         )
         """)
 
-        conn.commit()  # Save changes
+        conn.commit()
 
 # Run the initialization function to create tables
 initialize_db()

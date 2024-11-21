@@ -1,34 +1,51 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
+import React, { useEffect } from 'react';
+import Chatbox from './components/chatbox/chatbox';
+
+interface User {
+  id: number;
+  username: string;
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+
+  const [user, setUser] = React.useState<User | null>(null)
+  
+
+  const selectProps = {
+    label: '',
+    items: [{ key: 'onboarding', label: 'Onboarding' },
+    { key: 'billing', label: 'Billing' },],
+    placeholder: 'Select a context',
+    className: "max-w-xs",
+  }
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch('localhost:8000/users/')
+        const data = await response.json()
+        setUser(data)
+      } catch (error) {
+        console.error(error)
+      }
+    }
+   
+    fetchUser()
+    
+  }, [])
+
+  if (!user) {
+
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div className='relative'>
+      <h1 className='text-4xl text-center'>Hello World</h1>
+
+      <Chatbox selectProps={selectProps} user={user} conversation={conversation} botResponse={botResponse} />
+
+    </div>
   )
 }
 
