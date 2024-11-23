@@ -33,6 +33,7 @@ def initialize_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             message TEXT NOT NULL,
             user_id INTEGER NOT NULL
+            is_bot BOOLEAN NOT NULL DEFAULT FALSE
         )
         """)
 

@@ -3,6 +3,7 @@ CREATE TABLE messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT, -- Auto-incremented message ID
     message TEXT NOT NULL                 -- The message text
     user_id INTEGER NOT NULL,             -- Reference to users.id
+    is_bot BOOLEAN NOT NULL DEFAULT FALSE,-- Whether the message was sent by a bot
 );
 
 -- Table for storing conversations

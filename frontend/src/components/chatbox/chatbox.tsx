@@ -6,27 +6,57 @@ import { CgArrowsExpandRight } from "react-icons/cg";
 import { BsLayoutSidebar } from "react-icons/bs";
 import { IoMdClose } from "react-icons/io";
 import { useEffect } from "react";
+import React from "react";
+import { BotResponse, User } from "../../App";
 
-type ChatboxProps = {
-  selectProps: {
-    label: string
-    items: Array<{ key: string, label: string }>
-    placeholder: string
-    className: string
-  }
-  user: {username: string, id: number} | null,
-  conversation: {id: number, name: string} | null
-  botResponse: { [key: string]: {
-    inital : Array<string>,
-    options: {[key: string]: Array<string>},
-  }} | null
+interface Conversation { id: number, name: string }
+interface SelectProps {
+  label: string
+  items: Array<{ key: string, label: string }>
+  placeholder: string
+  className: string
 }
 
-export default function Chatbox({ selectProps, user }: ChatboxProps) {
-  const [conversation, setConversation] = React.useState(null)
-  const [botResponse, setBotResponse] = React.useState(null)
+interface Message {
+  id: number
+  message: string
+  is_bot: boolean
+}
+
+interface ConversationModel {
+  conversation: Conversation
+  messages: Array<Message>
+}
+
+interface QuestionTree {
+  questionHistory: Array<Question>
+  chatHistory: Array<{message: Message, keyIndex: number}>
+}
+
+type ChatboxProps = {
+  selectProps: SelectProps
+  user: User
+  botResponse: BotResponse
+}
+
+interface Question {
+  key: string;
+  options: Array<{[key: string]: string}>;
+  selected?: string | null;
+}
+
+export default function Chatbox({ selectProps, user, botResponse }: ChatboxProps) {
+  const [convoDetails, setConvoDetails] = React.useState<ConversationModel | null>(null)
+  const [questionTree, setQuestionTree] = React.useState<QuestionTree>({
+    questionHistory: [],
+    chatHistory: []
+  })
+
+
+  const initalQuestions = Object.keys(botResponse)
+
   useEffect(() => {
-     const createConversation = async () => {
+    const createConversation = async () => {
       try {
         const convoResponse = await fetch('localhost:8000/conversations/', {
           method: 'POST',
@@ -34,27 +64,51 @@ export default function Chatbox({ selectProps, user }: ChatboxProps) {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            id: user?.id,
-            name: user?.username
+            id: user.id,
+            name: user.username
           })
         })
+
         const convoData = await convoResponse.json()
-        const botResponse = await fetch('localhost:8000/chatbot/')
-        const botData = await botResponse.json()
-        
-        await fetch('localhost:8000/messages/', {
+        const messageResponse = await fetch('localhost:8000/messages/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            message: botResponse['inital'].question,
+            is_bot: true
+          })
+        })
+
+        const messageData = await messageResponse.json()
+
+        await fetch('localhost:8000/conversations/messages/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             conversation_id: convoData.id,
-            message: botData.initial
+            message_id: messageData.id
           })
         })
-      
-        setConversation(convoData)
-        setBotResponse(botData)
+
+        const obj: ConversationModel = {
+          conversation: convoData,
+          messages: [messageData] //probs dont need
+        }
+
+        const tree: QuestionTree = {
+          questionHistory: [
+            { key: 'inital', options: botResponse['inital'].options }
+          ],
+          chatHistory: [{message: messageData, keyIndex: 0}]
+        }
+
+        setQuestionTree(tree)
+        setConvoDetails(obj)
       } catch (error) {
         console.error(error)
       }
@@ -62,6 +116,43 @@ export default function Chatbox({ selectProps, user }: ChatboxProps) {
 
     createConversation()
   }, [])
+
+  if (convoDetails === null) {
+    return ('')
+  }
+
+  const onQuestionSelect = async (message: Message, allQuestions:Question, question: string, index: number) => {
+
+    const res = await fetch('localhost:8000/messages/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        user_id: user.id,
+        message: question,
+        is_bot: false
+      })
+    })
+
+    const data = await res.json()
+
+    const newQ = [...questionTree.questionHistory]
+    const newHs = [...questionTree.chatHistory]
+    allQuestions.selected = question
+    newQ.push(allQuestions)
+
+    const newQuestionTree: QuestionTree = {
+      questionHistory: [],
+      chatHistory: []
+    }
+  }
+
+  const botMessageRowStyle = 'flex flex-row justify-start items-center gap-2 w-80 bg-slate-100 p-2'
+  const userMessageRowStyle = 'flex flex-row justify-end items-center gap-2 w-80 bg-slate-100 p-2'
+  const botMessageBoxStyle = 'flex bg-slate-100 p-2'
+  const userMessageBoxStyle = 'flex bg-slate-700 p-2'
+
 
   return (
     <Card className="fixed bottom-4 right-10 w-85 h-96 pl-2 pr-2">
@@ -74,12 +165,33 @@ export default function Chatbox({ selectProps, user }: ChatboxProps) {
           <IoMdClose size={18} />
         </div>
         <div className='flex flex-col justify-center items-center pt-5'>
-          <Avatar src="https://i.pravatar.cc/150?u=a042581f4e29026704d" size="lg" />
+          <Avatar src="https://i.pravatar.cc/150?img=45" size="lg" />
           <p className='font-bold flex justify-center align-center self-center text-center pt-2'>Hey {emoji("👋")}, I'm Ava</p>
           <p className='font-light text-sm'>Ask me anything or pick a place to start</p>
         </div>
       </CardHeader>
       <CardBody className="">
+        {
+          questionTree.chatHistory.map(({ message, keyIndex }, index) => {
+            return <div key={`row-${index}`} className={message.is_bot ? botMessageRowStyle : userMessageRowStyle}>
+              {message.is_bot ? <Avatar src="https://i.pravatar.cc/150?img=45" size="sm" /> : ''}
+              <Card className={message.is_bot ? botMessageBoxStyle : userMessageBoxStyle}>
+                <CardBody>
+                  {message.message}
+                </CardBody>
+              </Card>
+              {message.is_bot &&
+                <div className='flex flex-row flex-wrap gap-2 pt-2'>
+                  {
+                    questionTree.questionHistory[keyIndex].options.map((option) => {
+                      const key = Object.keys(option)[0]
+                      return (<div onClick={()=>{onQuestionSelect(message, questionTree.questionHistory[keyIndex], option[key], index)}}></div>)
+                    })
+                  }
+                </div>}
+            </div>
+          })
+        }
       </CardBody>
       <CardFooter className='flex flex-col justify-normal items-start w-full pb-3'>
         <Divider className="w-80 bg-slate-100" />
