@@ -1,6 +1,7 @@
 import './App.css'
 import React, { useEffect } from 'react';
 import Chatbox from './components/chatbox/chatbox';
+import { Button } from '@nextui-org/react';
 
 export interface User {
   id: number;
@@ -17,19 +18,12 @@ export interface BotResponse {
 function App() {
   const [user, setUser] = React.useState<User | null>(null)
   const [botResponse, setBotResponse] = React.useState<BotResponse | null>(null)
-
-  const selectProps = {
-    label: '',
-    items: [{ key: 'onboarding', label: 'Onboarding' },
-    { key: 'billing', label: 'Billing' },],
-    placeholder: 'Select a context',
-    className: "max-w-xs",
-  }
+  const [isHidden, setIsHidden] = React.useState<boolean>(false)
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch('localhost:8000/users/')
+        const response = await fetch('http://localhost:8000/users/')
         const data = await response.json()
         setUser(data)
       } catch (error) {
@@ -38,9 +32,10 @@ function App() {
     }
     const fetchBotResponse = async () => {
       try {
-        const botResponse = await fetch('localhost:8000/chatbot/')
+        const botResponse = await fetch('http://localhost:8000/chatbot/')
         const botData = await botResponse.json()
-        setBotResponse(botData)
+        
+        setBotResponse(botData.responses)
       } catch (error) {
         console.error(error)
       }
@@ -57,7 +52,11 @@ function App() {
     <div className='relative'>
       <h1 className='text-4xl text-center'>Hello World</h1>
       <React.Suspense fallback={<div>Loading...</div>}>
-        <Chatbox selectProps={selectProps} user={user} botResponse={botResponse} />
+        <div>
+          <label className='text-lg'>click the button to open the chatbox if you close it</label><br/>
+          <Button onPress={()=>{setIsHidden(false)}}>Show Chat Box</Button>
+        </div>
+        <Chatbox user={user} botResponse={botResponse} showBox={isHidden} setIsHidden={setIsHidden}/>
       </React.Suspense>
     </div>
   )

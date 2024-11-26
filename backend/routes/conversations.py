@@ -1,7 +1,7 @@
 import sqlite3
 from fastapi import APIRouter, Depends, HTTPException # type: ignore
-from backend.models.conversation import ConversationWithMessage
-from backend.models.user import User
+from models.conversation import ConversationMergeMessage, ConversationWithMessage
+from models.user import User
 from database import get_db
 
 router = APIRouter()
@@ -53,16 +53,17 @@ def get_conversation(conversation_id: int, db: sqlite3.Connection = Depends(get_
         raise HTTPException(status_code=500, detail=f"Database error: {e}") 
 
 @router.post("/conversations/messages/")
-def append_conversation(conversation: ConversationWithMessage, db: sqlite3.Connection = Depends(get_db)):
+def append_conversation(conversation: ConversationMergeMessage, db: sqlite3.Connection = Depends(get_db)):
     try:
         cursor = db.cursor()
         cursor.execute(
             "INSERT INTO conversation_messages (conversation_id, message_id) VALUES (?, ?)",
-            (conversation.id, conversation.message.id)
+            (conversation.conversation_id, conversation.message_id)
         )
         db.commit()
-        return {"conversation_id": conversation.id, "message_id": conversation.message.id}
+        return {"conversation_id": conversation.conversation_id, "message_id": conversation.message_id}
     except sqlite3.IntegrityError as e:
+        print(e)
         raise HTTPException(status_code=400, detail=f"Integrity error: {e}")
     except sqlite3.Error as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")

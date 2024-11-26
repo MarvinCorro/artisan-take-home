@@ -1,6 +1,6 @@
 import sqlite3
 from fastapi import APIRouter, Depends, HTTPException # type: ignore
-from backend.models.message import MessageCreate, MessageDelete, MessageUpdate
+from models.message import MessageCreate, MessageDelete, MessageUpdate
 from database import get_db
 
 router = APIRouter()

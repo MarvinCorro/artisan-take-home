@@ -1,21 +1,13 @@
-import { Card, CardHeader, Avatar, CardBody, CardFooter, Divider, Input, Select, SelectItem } from "@nextui-org/react";
+import { Card, CardHeader, Avatar, CardBody, CardFooter, Divider, Input } from "@nextui-org/react";
 import emoji from "react-easy-emoji";
-import { IoSettingsOutline } from "react-icons/io5";
 import { LuSendHorizonal } from "react-icons/lu";
 import { CgArrowsExpandRight } from "react-icons/cg";
-import { BsLayoutSidebar } from "react-icons/bs";
 import { IoMdClose } from "react-icons/io";
 import { useEffect } from "react";
 import React from "react";
 import { BotResponse, User } from "../../App";
 
-interface Conversation { id: number, name: string }
-interface SelectProps {
-  label: string
-  items: Array<{ key: string, label: string }>
-  placeholder: string
-  className: string
-}
+interface Conversation { conversation_id: number, name: string }
 
 interface Message {
   id: number
@@ -30,35 +22,101 @@ interface ConversationModel {
 
 interface QuestionTree {
   questionHistory: Array<Question>
-  chatHistory: Array<{message: Message, keyIndex: number}>
+  chatHistory: Array<{ message: Message, keyIndex: number }>
 }
 
 type ChatboxProps = {
-  selectProps: SelectProps
   user: User
   botResponse: BotResponse
+  showBox: boolean
+  setIsHidden: (isHidden: boolean) => void
 }
 
 interface Question {
   key: string;
-  options: Array<{[key: string]: string}>;
+  options: Array<{ [key: string]: string }>;
   selected?: string | null;
 }
 
-export default function Chatbox({ selectProps, user, botResponse }: ChatboxProps) {
+const sendMessageAndLinkToConvo = async (convoId: number, user: User, question: string, isBot: boolean) => {
+  const mess = await fetch('http://localhost:8000/messages/messages/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      user_id: user.id,
+      message: question,
+      is_bot: isBot
+    })
+  })
+
+  const messData = await mess.json()
+  await fetch('http://localhost:8000/conversations/conversations/messages/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      conversation_id: convoId,
+      message_id: messData.message_id
+    })
+  })
+
+  return messData
+}
+
+const botMessageRowStyle = 'flex flex-col justify-start gap-2 w-80 bg-slate-100 p-2 bg-transparent gap-3'
+const userMessageRowStyle = 'flex flex-row justify-end gap-2 w-80 bg-slate-100 p-2 bg-transparent'
+const botMessageBoxStyle = 'flex bg-slate-100 p-2'
+const userMessageBoxStyle = 'flex bg-violet-400 text-white p-2'
+
+const cardStyle = 'h-[600px] pl-2 pr-2'
+const minimizedCardStyle = 'w-[400px] h-[50px]'
+  
+
+export default function Chatbox({ user, botResponse, showBox, setIsHidden }: ChatboxProps) {
   const [convoDetails, setConvoDetails] = React.useState<ConversationModel | null>(null)
   const [questionTree, setQuestionTree] = React.useState<QuestionTree>({
     questionHistory: [],
     chatHistory: []
   })
+  
+  const [validation, setValidation] = React.useState<string>('')
+  const [input, setInput] = React.useState<string>('')
+  const [inFlight, setInFlight] = React.useState<boolean>(false)
+  const [isExpanded, setIsExpanded] = React.useState<boolean>(true);
+  const totalSyles = React.useMemo(()=>{
+    console.log('respond respond')
+    return `${showBox ? 'hidden' : 'initial'} fixed bottom-4 right-10 w-96 transition-all duration-300 ${isExpanded ? cardStyle : minimizedCardStyle } `
+  }, [showBox, isExpanded])
 
+  const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
 
-  const initalQuestions = Object.keys(botResponse)
+  const submitQuestion = async () => {
+    const oldKey = questionTree.questionHistory[questionTree.questionHistory.length - 1].key
+
+    const oldObj = botResponse[oldKey].options.filter((option) => { 
+      const innerKey = Object.keys(option)[0]
+      console.log(innerKey, input)
+      return option[innerKey].toLowerCase() === input.toLowerCase() 
+    })[0]
+    const keyIndex = questionTree.chatHistory[questionTree.chatHistory.length - 1].keyIndex
+    const [key, value] = Object.entries(oldObj)[0]
+
+    onQuestionSelect(key, keyIndex, value, questionTree.chatHistory.length)
+  }
+
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }
 
   useEffect(() => {
     const createConversation = async () => {
       try {
-        const convoResponse = await fetch('localhost:8000/conversations/', {
+        const convoResponse = await fetch('http://localhost:8000/conversations/conversations/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -70,30 +128,8 @@ export default function Chatbox({ selectProps, user, botResponse }: ChatboxProps
         })
 
         const convoData = await convoResponse.json()
-        const messageResponse = await fetch('localhost:8000/messages/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            user_id: user.id,
-            message: botResponse['inital'].question,
-            is_bot: true
-          })
-        })
 
-        const messageData = await messageResponse.json()
-
-        await fetch('localhost:8000/conversations/messages/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            conversation_id: convoData.id,
-            message_id: messageData.id
-          })
-        })
+        const messageData = await sendMessageAndLinkToConvo(convoData.conversation_id, user, botResponse['main_menu'].question, true)
 
         const obj: ConversationModel = {
           conversation: convoData,
@@ -102,67 +138,94 @@ export default function Chatbox({ selectProps, user, botResponse }: ChatboxProps
 
         const tree: QuestionTree = {
           questionHistory: [
-            { key: 'inital', options: botResponse['inital'].options }
+            { key: 'main_menu', options: botResponse['main_menu'].options }
           ],
-          chatHistory: [{message: messageData, keyIndex: 0}]
+          chatHistory: [{ message: messageData, keyIndex: 0 }]
         }
-
+        setInFlight(true)
         setQuestionTree(tree)
         setConvoDetails(obj)
+        setInFlight(false)
       } catch (error) {
         console.error(error)
       }
     }
+    if (inFlight == false) {
+      createConversation()
+    }
+  }, [user])
 
-    createConversation()
-  }, [])
+  useEffect(() => {
+    scrollToBottom();
+  }, [questionTree]);
+
+  useEffect(() => {
+    if (convoDetails !== null) {
+      const found = questionTree.questionHistory[questionTree.questionHistory.length - 1].options.filter((option) => {
+        const key = Object.keys(option)[0]; // Access the first element of the 'key' array
+        return option[key].toLowerCase() === input.toLowerCase();
+      });
+
+      if(input === '') {
+        setValidation('')
+        return
+      }
+
+      if (found.length === 0) {
+        setValidation('Input does not match any options')
+      } else {
+        setValidation('')
+      }
+    }
+  }, [input]);
 
   if (convoDetails === null) {
-    return ('')
+    return ('');
   }
 
-  const onQuestionSelect = async (message: Message, allQuestions:Question, question: string, index: number) => {
-
-    const res = await fetch('localhost:8000/messages/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        user_id: user.id,
-        message: question,
-        is_bot: false
-      })
-    })
-
-    const data = await res.json()
+  const onQuestionSelect = async (key: string, keyIndex: number, selected: string, index: number) => {
 
     const newQ = [...questionTree.questionHistory]
     const newHs = [...questionTree.chatHistory]
-    allQuestions.selected = question
-    newQ.push(allQuestions)
+
+    const humanMessage = await sendMessageAndLinkToConvo(convoDetails.conversation.conversation_id, user, selected, false)
+    const botMessage = await sendMessageAndLinkToConvo(convoDetails.conversation.conversation_id, user, botResponse[key].question, true)
+
+    newQ[newQ.length - 1].selected = selected
+    console.log(key, keyIndex, botResponse[key])
+    newQ.push({ key: key, options: botResponse[key].options })
+    newHs.push({ message: humanMessage, keyIndex: keyIndex + 1 })
+    newHs.push({ message: botMessage, keyIndex: keyIndex + 1 })
 
     const newQuestionTree: QuestionTree = {
-      questionHistory: [],
-      chatHistory: []
+      questionHistory: newQ,
+      chatHistory: newHs,
+    }
+
+    setInFlight(true)
+    setQuestionTree(newQuestionTree)
+    setInFlight(false)
+  }
+
+  const handleKeyDown = async (e:React.KeyboardEvent<HTMLInputElement>) => {
+    if(e.key === 'Enter') {
+      submitQuestion()
     }
   }
 
-  const botMessageRowStyle = 'flex flex-row justify-start items-center gap-2 w-80 bg-slate-100 p-2'
-  const userMessageRowStyle = 'flex flex-row justify-end items-center gap-2 w-80 bg-slate-100 p-2'
-  const botMessageBoxStyle = 'flex bg-slate-100 p-2'
-  const userMessageBoxStyle = 'flex bg-slate-700 p-2'
+  
 
-
+  //indigo-600
   return (
-    <Card className="fixed bottom-4 right-10 w-85 h-96 pl-2 pr-2">
+    <Card className={totalSyles}>
       <CardHeader className='flex flex-col w-full'>
         <div className='flex justify-between pt-1 w-full'>
           <div className='flex flex-row gap-2'>
-            <CgArrowsExpandRight size={15} />
-            <BsLayoutSidebar size={15} />
+            <CgArrowsExpandRight className="cursor-pointer" onClick={() => setIsExpanded(!isExpanded)} size={15} />
           </div>
-          <IoMdClose size={18} />
+          <IoMdClose className="cursor-pointer" onClick={()=>{
+            setIsHidden(!showBox)
+          }} size={18} />
         </div>
         <div className='flex flex-col justify-center items-center pt-5'>
           <Avatar src="https://i.pravatar.cc/150?img=45" size="lg" />
@@ -170,46 +233,63 @@ export default function Chatbox({ selectProps, user, botResponse }: ChatboxProps
           <p className='font-light text-sm'>Ask me anything or pick a place to start</p>
         </div>
       </CardHeader>
-      <CardBody className="">
+      <CardBody className="h-[350px] overflow-y-auto">
         {
           questionTree.chatHistory.map(({ message, keyIndex }, index) => {
             return <div key={`row-${index}`} className={message.is_bot ? botMessageRowStyle : userMessageRowStyle}>
-              {message.is_bot ? <Avatar src="https://i.pravatar.cc/150?img=45" size="sm" /> : ''}
-              <Card className={message.is_bot ? botMessageBoxStyle : userMessageBoxStyle}>
-                <CardBody>
-                  {message.message}
-                </CardBody>
-              </Card>
+              <div className="flex flex-row gap-2">
+                {message.is_bot ? <div><Avatar src="https://i.pravatar.cc/150?img=45" size="md" /></div> : ''}
+                <Card className={message.is_bot ? botMessageBoxStyle : userMessageBoxStyle}>
+                  <CardBody className="p-1">
+                    {message.message}
+                  </CardBody>
+                </Card>
+              </div>
               {message.is_bot &&
-                <div className='flex flex-row flex-wrap gap-2 pt-2'>
+                <div key={`questions-${index}-${keyIndex}`} className='flex flex-row flex-wrap gap-2 pt-2'>
                   {
                     questionTree.questionHistory[keyIndex].options.map((option) => {
                       const key = Object.keys(option)[0]
-                      return (<div onClick={()=>{onQuestionSelect(message, questionTree.questionHistory[keyIndex], option[key], index)}}></div>)
+                      return (
+                        <div className="cursor-pointer border-solid border-2 border-violet-400 text-violet-400 rounded-full mt-1 mb-1 pl-3 pr-3 "
+                          key={`option-${key}`}
+                          onClick={() => { onQuestionSelect(key, keyIndex, option[key], index) }}>
+                          {
+                            option[key]
+                          }
+                        </div>)
                     })
                   }
                 </div>}
             </div>
           })
         }
+        <div ref={messagesEndRef}></div>
       </CardBody>
-      <CardFooter className='flex flex-col justify-normal items-start w-full pb-3'>
+      <CardFooter className='bg-white flex flex-col justify-normal items-start w-full pb-3 mb-4 '>
         <Divider className="w-80 bg-slate-100" />
         <div className='flex justify-start items-center pt-4 gap-2 w-full'>
           <Avatar src="https://i.pravatar.cc/150?u=a042581f4e29026704d" size="sm" />
-          <Input radius='sm' classNames={{ input: ["bg-transparent", "boarder-0", "outline-none", 'drop-shadow-none', 'shadow-none'], innerWrapper: ["bg-transparent", "boarder-0", "outline-none", 'drop-shadow-none', 'shadow-none'], inputWrapper: ["bg-transparent", "boarder-0", "outline-none", 'drop-shadow-none', 'shadow-none'] }} placeholder="Your question" />
-        </div>
-        <div className='flex flex-row justify-between items-center align-baseline w-full pt-3 pb-3'>
-          <div className='flex w-60 gap-2'>
-            <p className="self-center font-light">Context</p>
-            <Select size="sm" items={selectProps.items} placeholder={selectProps.placeholder} label={selectProps.label} className="max-w-xs">
-              {(item) => <SelectItem className="font-bold" key={item.key}>{item.label}</SelectItem>}
-            </Select>
-          </div>
-          <div className="flex gap-2 items-center">
-            <IoSettingsOutline size={19} />
-            <LuSendHorizonal size={19} />
-          </div>
+          <Input
+            value={input}
+            onValueChange={setInput}
+            radius='sm'
+            classNames={{
+              input: ["bg-transparent", "boarder-0", "outline-none", 'drop-shadow-none', 'shadow-none'],
+              innerWrapper: ["bg-transparent", "boarder-0", "outline-none", 'drop-shadow-none', 'shadow-none'],
+              inputWrapper: ["bg-transparent", "boarder-0", "outline-none", 'drop-shadow-none', 'shadow-none']
+            }}
+            placeholder="Your question"
+            errorMessage={validation}
+            isInvalid={validation !== ''}
+            onKeyDown={handleKeyDown}
+          />
+          <LuSendHorizonal onClick={() => {
+            if (validation !== '') {
+              return
+            }
+            submitQuestion()
+          }} size={19} />
         </div>
       </CardFooter>
     </Card>

@@ -8,7 +8,7 @@ def get_db() -> Generator[sqlite3.Connection, None, None]:
     """
     Creates a new database connection for each request.
     """
-    conn = sqlite3.connect(DB_FILE)  # Default is `check_same_thread=True`
+    conn = sqlite3.connect(DB_FILE, check_same_thread=False)  # Default is `check_same_thread=True`
     try:
         yield conn
     finally:
@@ -32,7 +32,7 @@ def initialize_db():
         CREATE TABLE IF NOT EXISTS messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             message TEXT NOT NULL,
-            user_id INTEGER NOT NULL
+            user_id INTEGER NOT NULL,
             is_bot BOOLEAN NOT NULL DEFAULT FALSE
         )
         """)

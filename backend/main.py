@@ -1,12 +1,26 @@
 import sqlite3
 from fastapi import FastAPI, Depends, HTTPException # type: ignore
-from backend.bot import get_responses
-from backend.user import get_random_user
+from fastapi.middleware.cors import CORSMiddleware # type: ignore
+from bot import get_responses
+from user import get_random_user
 from database import get_db
 from routes.conversations import router as conversations_router
 from routes.messages import router as messages_router
 
 app = FastAPI()
+
+origins = [
+    "http://localhost",
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(conversations_router, prefix="/conversations", tags=["Conversations"])
 app.include_router(messages_router, prefix="/messages", tags=["Messages"])

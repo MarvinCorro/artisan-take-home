@@ -10,6 +10,10 @@ class ConversationWithMessage(BaseModel):
     id: int
     message: Message
 
+class ConversationMergeMessage(BaseModel):
+    conversation_id: int
+    message_id: int
+
 class ConversationWithMessages(BaseModel):
     id: int
     messages: List[Message]
