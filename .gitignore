@@ -5,3 +5,4 @@ frontend/package-lock.json
 # Ignore .venv from the backend
 backend/.venv
 backend/__pycache__
+backend/artisan.db
