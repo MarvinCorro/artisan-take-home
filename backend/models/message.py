@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel # type: ignore
 from typing import Optional
 
 class Message(BaseModel):
@@ -17,7 +17,11 @@ class MessageUpdate(BaseModel):
     user_id: int
 
 class MessageDelete(BaseModel):
+    id: int
+
+class MessageDeleteUser(BaseModel):
     user_id: int
 
 class MessageUpdate(BaseModel):
     message: str
+    id: int

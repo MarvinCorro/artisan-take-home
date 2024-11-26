@@ -10,7 +10,7 @@ import { BotResponse, User } from "../../App";
 interface Conversation { conversation_id: number, name: string }
 
 interface Message {
-  id: number
+  message_id: number
   message: string
   is_bot: boolean
 }
@@ -87,7 +87,6 @@ export default function Chatbox({ user, botResponse, showBox, setIsHidden }: Cha
   const [inFlight, setInFlight] = React.useState<boolean>(false)
   const [isExpanded, setIsExpanded] = React.useState<boolean>(true);
   const totalSyles = React.useMemo(()=>{
-    console.log('respond respond')
     return `${showBox ? 'hidden' : 'initial'} fixed bottom-4 right-10 w-96 transition-all duration-300 ${isExpanded ? cardStyle : minimizedCardStyle } `
   }, [showBox, isExpanded])
 
@@ -98,7 +97,6 @@ export default function Chatbox({ user, botResponse, showBox, setIsHidden }: Cha
 
     const oldObj = botResponse[oldKey].options.filter((option) => { 
       const innerKey = Object.keys(option)[0]
-      console.log(innerKey, input)
       return option[innerKey].toLowerCase() === input.toLowerCase() 
     })[0]
     const keyIndex = questionTree.chatHistory[questionTree.chatHistory.length - 1].keyIndex
@@ -192,7 +190,6 @@ export default function Chatbox({ user, botResponse, showBox, setIsHidden }: Cha
     const botMessage = await sendMessageAndLinkToConvo(convoDetails.conversation.conversation_id, user, botResponse[key].question, true)
 
     newQ[newQ.length - 1].selected = selected
-    console.log(key, keyIndex, botResponse[key])
     newQ.push({ key: key, options: botResponse[key].options })
     newHs.push({ message: humanMessage, keyIndex: keyIndex + 1 })
     newHs.push({ message: botMessage, keyIndex: keyIndex + 1 })
@@ -245,6 +242,23 @@ export default function Chatbox({ user, botResponse, showBox, setIsHidden }: Cha
                   </CardBody>
                 </Card>
               </div>
+              {!message.is_bot ? <IoMdClose className="cursor-pointer" onClick={async ()=>{
+                console.log(questionTree)
+                const deleteMeArray = questionTree.chatHistory.filter((_, index) => {
+                  return index >= keyIndex
+                })
+                deleteMeArray.map(async (message) => {
+                  return fetch(`http://localhost:8000/messages/messages/${message.message.message_id}`, {
+                    method: 'DELETE',
+
+                  })
+                })
+                await Promise.all(deleteMeArray)
+                setQuestionTree({
+                  questionHistory: questionTree.questionHistory.slice(0, keyIndex + 1),
+                  chatHistory: questionTree.chatHistory.slice(0, index),
+                })
+              }} size={15} />: ''}
               {message.is_bot &&
                 <div key={`questions-${index}-${keyIndex}`} className='flex flex-row flex-wrap gap-2 pt-2'>
                   {
@@ -266,13 +280,14 @@ export default function Chatbox({ user, botResponse, showBox, setIsHidden }: Cha
         }
         <div ref={messagesEndRef}></div>
       </CardBody>
-      <CardFooter className='bg-white flex flex-col justify-normal items-start w-full pb-3 mb-4 '>
+      <CardFooter className='bg-white flex flex-col justify-center items-center w-full pb-3 mb-3 '>
         <Divider className="w-80 bg-slate-100" />
-        <div className='flex justify-start items-center pt-4 gap-2 w-full'>
-          <Avatar src="https://i.pravatar.cc/150?u=a042581f4e29026704d" size="sm" />
+        <div className='flex flex-row items-centers content-center justify-center place-items-center pt-4 gap-2 w-full'>
+          <Avatar className="self-center" src="https://i.pravatar.cc/150?u=a042581f4e29026704d" size="sm" />
           <Input
             value={input}
             onValueChange={setInput}
+            className="self-center"
             radius='sm'
             classNames={{
               input: ["bg-transparent", "boarder-0", "outline-none", 'drop-shadow-none', 'shadow-none'],
@@ -284,7 +299,7 @@ export default function Chatbox({ user, botResponse, showBox, setIsHidden }: Cha
             isInvalid={validation !== ''}
             onKeyDown={handleKeyDown}
           />
-          <LuSendHorizonal onClick={() => {
+          <LuSendHorizonal className="self-center" onClick={() => {
             if (validation !== '') {
               return
             }

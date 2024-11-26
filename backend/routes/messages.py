@@ -1,6 +1,6 @@
 import sqlite3
 from fastapi import APIRouter, Depends, HTTPException # type: ignore
-from models.message import MessageCreate, MessageDelete, MessageUpdate
+from models.message import MessageCreate, MessageDelete, MessageDeleteUser, MessageUpdate
 from database import get_db
 
 router = APIRouter()
@@ -33,7 +33,7 @@ def create_message(message: MessageCreate, db: sqlite3.Connection = Depends(get_
 def update_message(message: MessageUpdate, db: sqlite3.Connection = Depends(get_db)):
     try:
         cursor = db.cursor()
-        cursor.execute("UPDATE messages SET message = ? WHERE id = ?", (message.message, message.user_id))
+        cursor.execute("UPDATE messages SET message = ? WHERE id = ?", (message.message, message.id))
         db.commit()
         if cursor.rowcount == 0:
             raise HTTPException(status_code=404, detail="Message not found")
@@ -41,16 +41,17 @@ def update_message(message: MessageUpdate, db: sqlite3.Connection = Depends(get_
     except sqlite3.Error as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
-@router.delete("/messages/")
-def delete_message(message: MessageDelete, db: sqlite3.Connection = Depends(get_db)):
+@router.delete("/messages/{id}")
+def delete_message(id: int, db: sqlite3.Connection = Depends(get_db)):
     try:
         cursor = db.cursor()
-        cursor.execute("DELETE FROM messages WHERE id = ?", (message.user_id,))
+        cursor.execute("DELETE FROM messages WHERE id = ?", (id,))
         db.commit()
         if cursor.rowcount == 0:
             raise HTTPException(status_code=404, detail="Message not found")
-        return {"message": f"Message with ID {message.id} deleted successfully"}
+        return {"message": f"Message with ID {id} deleted successfully"}
     except sqlite3.Error as e:
+        print(e)
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
     
 @router.get("/messages/bots/")
