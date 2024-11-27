@@ -6,7 +6,7 @@ from database import get_db
 
 router = APIRouter()
 
-@router.get("/conversations/")
+@router.get("/")
 def get_all_conversations(db: sqlite3.Connection = Depends(get_db)):
     try:
         cursor = db.cursor()
@@ -16,7 +16,7 @@ def get_all_conversations(db: sqlite3.Connection = Depends(get_db)):
     except sqlite3.Error as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
-@router.post("/conversations/")
+@router.post("/")
 def create_conversation(user: User, db: sqlite3.Connection = Depends(get_db)):
     try:
         cursor = db.cursor()
@@ -26,7 +26,7 @@ def create_conversation(user: User, db: sqlite3.Connection = Depends(get_db)):
     except sqlite3.Error as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
-@router.get("/conversations/{conversation_id}")
+@router.get("/{conversation_id}")
 def get_conversation(conversation_id: int, db: sqlite3.Connection = Depends(get_db)):
     try:
         cursor = db.cursor()
@@ -52,7 +52,7 @@ def get_conversation(conversation_id: int, db: sqlite3.Connection = Depends(get_
     except sqlite3.Error as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}") 
 
-@router.post("/conversations/messages/")
+@router.post("/messages/")
 def append_conversation(conversation: ConversationMergeMessage, db: sqlite3.Connection = Depends(get_db)):
     try:
         cursor = db.cursor()

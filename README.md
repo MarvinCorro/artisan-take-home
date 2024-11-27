@@ -21,14 +21,14 @@ To install the backend requirements, follow these steps:
 
 1. Ensure you have Python installed. You can download it from [python.org](https://www.python.org/).
 2. Create a virtual environment:
-   ```python3 -m venv venv```
+        ```python3 -m venv venv```
 3. Activate the virtual environment:
     On macOS and Linux:
-        ```source venv/bin/activate```
-    On Windows:
+        ```source venv/bin/activate```  
+    On Windows:  
         ```.\venv\Scripts\activate```
 4.  Install the required packages
-        ```pip install -r requirements.txt```
+        ```pip install -r requirements.txt```  
 5.  Make sure you have sqlite3 installed, if you have a mac it should already be pre installed on your machine
 
 Frontend Requirements
@@ -41,12 +41,12 @@ To install the frontend requirements, follow these steps:
     ```npm install```
 
 Usage
-- Run the backend by moving to the backend folder then using the command
-    ```uvicorn main:app --reload```
+- Run the backend by moving to the backend folder then using the command  
+    ```uvicorn main:app --reload```  
 > This will create a sqlite table if it does not exist and listen for API request over localhost
 
-- Run the frontend by moving to the frontend folder and running 
-    ```npm run dev```
+- Run the frontend by moving to the frontend folder and running  
+    ```npm run dev```  
 > You can load the webpage at ```http://localhost:5173/```
 
 

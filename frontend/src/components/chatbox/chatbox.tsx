@@ -6,6 +6,7 @@ import { IoMdClose } from "react-icons/io";
 import { useEffect } from "react";
 import React from "react";
 import { BotResponse, User } from "../../App";
+import { BUILD_URL_DELETE_MESSAGE, CREATE_CONVERSATION, CREATE_MESSAGE, LINK_MESSAGE_TO_CONVO } from "../../routes/routes";
 
 interface Conversation { conversation_id: number, name: string }
 
@@ -39,7 +40,7 @@ interface Question {
 }
 
 const sendMessageAndLinkToConvo = async (convoId: number, user: User, question: string, isBot: boolean) => {
-  const mess = await fetch('http://localhost:8000/messages/messages/', {
+  const mess = await fetch(CREATE_MESSAGE, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -52,7 +53,7 @@ const sendMessageAndLinkToConvo = async (convoId: number, user: User, question: 
   })
 
   const messData = await mess.json()
-  await fetch('http://localhost:8000/conversations/conversations/messages/', {
+  await fetch(LINK_MESSAGE_TO_CONVO, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -114,7 +115,7 @@ export default function Chatbox({ user, botResponse, showBox, setIsHidden }: Cha
   useEffect(() => {
     const createConversation = async () => {
       try {
-        const convoResponse = await fetch('http://localhost:8000/conversations/conversations/', {
+        const convoResponse = await fetch(CREATE_CONVERSATION, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -248,9 +249,8 @@ export default function Chatbox({ user, botResponse, showBox, setIsHidden }: Cha
                   return index >= keyIndex
                 })
                 deleteMeArray.map(async (message) => {
-                  return fetch(`http://localhost:8000/messages/messages/${message.message.message_id}`, {
+                  return fetch(BUILD_URL_DELETE_MESSAGE(message.message.message_id), {
                     method: 'DELETE',
-
                   })
                 })
                 await Promise.all(deleteMeArray)

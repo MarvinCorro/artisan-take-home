@@ -2,6 +2,7 @@ import './App.css'
 import React, { useEffect } from 'react';
 import Chatbox from './components/chatbox/chatbox';
 import { Button } from '@nextui-org/react';
+import { GET_USER, GET_BOT_RESPONSE } from './routes/routes';
 
 export interface User {
   id: number;
@@ -23,7 +24,7 @@ function App() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch('http://localhost:8000/users/')
+        const response = await fetch(GET_USER)
         const data = await response.json()
         setUser(data)
       } catch (error) {
@@ -32,7 +33,7 @@ function App() {
     }
     const fetchBotResponse = async () => {
       try {
-        const botResponse = await fetch('http://localhost:8000/chatbot/')
+        const botResponse = await fetch(GET_BOT_RESPONSE)
         const botData = await botResponse.json()
         
         setBotResponse(botData.responses)

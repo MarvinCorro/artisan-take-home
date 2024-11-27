@@ -5,7 +5,7 @@ from database import get_db
 
 router = APIRouter()
 
-@router.get("/messages/{message_id}")
+@router.get("/{message_id}")
 def get_message_by_id(message_id: int, db: sqlite3.Connection = Depends(get_db)):
     try:
         cursor = db.cursor()
@@ -17,7 +17,7 @@ def get_message_by_id(message_id: int, db: sqlite3.Connection = Depends(get_db))
     except sqlite3.Error as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
-@router.post("/messages/")
+@router.post("/")
 def create_message(message: MessageCreate, db: sqlite3.Connection = Depends(get_db)):
     try:
         cursor = db.cursor()
@@ -29,7 +29,7 @@ def create_message(message: MessageCreate, db: sqlite3.Connection = Depends(get_
     except sqlite3.Error as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
-@router.put("/messages/")
+@router.put("/")
 def update_message(message: MessageUpdate, db: sqlite3.Connection = Depends(get_db)):
     try:
         cursor = db.cursor()
@@ -41,7 +41,7 @@ def update_message(message: MessageUpdate, db: sqlite3.Connection = Depends(get_
     except sqlite3.Error as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
-@router.delete("/messages/{id}")
+@router.delete("/{id}")
 def delete_message(id: int, db: sqlite3.Connection = Depends(get_db)):
     try:
         cursor = db.cursor()
@@ -54,7 +54,7 @@ def delete_message(id: int, db: sqlite3.Connection = Depends(get_db)):
         print(e)
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
     
-@router.get("/messages/bots/")
+@router.get("/bots/")
 def get_all_bot_messages(db: sqlite3.Connection = Depends(get_db)):
     try:
         cursor = db.cursor()

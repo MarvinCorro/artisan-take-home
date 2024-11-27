@@ -8,7 +8,6 @@ from routes.conversations import router as conversations_router
 from routes.messages import router as messages_router
 
 app = FastAPI()
-
 origins = [
     "http://localhost",
     "http://localhost:5173",
@@ -33,6 +32,8 @@ def read_root():
 def get_chatbot_options():
     return {"responses": get_responses()}
 
+
+## to few routes to creaate a new file but the few below should be a new route file
 @app.get("/users/")
 def get_users():
     user = get_random_user()
