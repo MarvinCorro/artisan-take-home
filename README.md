@@ -95,10 +95,14 @@ The frontend was developed to interact with the backend through standard fetch r
 - **Messages** (GET, POST, PUT, DELETE)
 - **Conversations** (GET, POST, PUT, DELETE)
 
+### **Left out features**
+
+I decided to omit the ability to edit messages that have already been sent, as I felt it was unnecessary for this UI. Since users can easily delete messages to backtrack, the edit feature seemed redundant. Therefore, I prioritized simplicity and chose to leave it out.
+
 ---
 
 ## **If I Had More Time**
 
 Given additional time, I would have:
-1. Implemented a feature to load and continue previous conversations based on timestamps or older conversation data.
+1. Implemented a feature to load and continue previous conversations based on timestamps or older conversation data. (Also the ability to delete entire conversations in addition)
 2. Enhanced the chatbot’s functionality for a more dynamic user experience.
